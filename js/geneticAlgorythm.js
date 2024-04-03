@@ -208,7 +208,7 @@ function geneticAlgorithmTSP(startCity, cityData, populationSize, generations) {
   }
 
   // Get the best path after all generations
-  const bestPath = population[0].path;
+  const bestPath = population[0];
   console.log(bestPath);
   const totalTime = calculateTotalDistance(bestPath, distances);
 
