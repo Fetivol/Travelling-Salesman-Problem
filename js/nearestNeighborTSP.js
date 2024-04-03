@@ -121,7 +121,6 @@ Kielce Kraków 100
 Kielce Rzeszów 145
 Kraków Rzeszów 112
 `;
-// Function to parse the input data and extract relevant information
 function parseInputData(input) {
   const lines = input.trim().split("\n");
 
@@ -146,7 +145,6 @@ function parseInputData(input) {
 
 function calculateTotalTime(path, distances) {
   let totalTime = 0;
-  // Iterate through the path to sum the travel times between consecutive cities
   for (let i = 0; i < path.length - 1; i++) {
     const currentCity = path[i];
     const nextCity = path[i + 1];
@@ -154,10 +152,8 @@ function calculateTotalTime(path, distances) {
   }
   return totalTime;
 }
-// Implement the Nearest Neighbor Algorithm
-// Modify the nearestNeighborTSP function to handle the "null" end of iteration
+
 function nearestNeighborTSP(startCity, cityData) {
-  // Convert time to distances
   const distances = {};
   cityData.forEach(({ cityA, cityB, time }) => {
     distances[cityA] = distances[cityA] || {};
@@ -166,11 +162,9 @@ function nearestNeighborTSP(startCity, cityData) {
     distances[cityB][cityA] = time;
   });
 
-  // Nearest Neighbor Algorithm
   const path = [startCity];
   let currentCity = startCity;
 
-  // Iterate through the available cities
   while (path.length < Object.keys(distances).length) {
     let nearestCity = null;
     let minDistance = Number.MAX_SAFE_INTEGER;
@@ -187,20 +181,17 @@ function nearestNeighborTSP(startCity, cityData) {
       currentCity = nearestCity;
     } else {
       path.push(startCity);
-      break; // Exit the loop if the nearest city is null
+      break;
     }
   }
 
-  // Calculate the total time for the path
   const totalTime = calculateTotalTime(path, distances);
 
   return { path, totalTime };
 }
 
-// Parse the input data
 const { numCities, startCity, cityData } = parseInputData(inputData);
 
-// Solve the TSP using the Nearest Neighbor Algorithm
 const { path, totalTime } = nearestNeighborTSP(startCity, cityData);
 
 console.log("Optimal TSP Path:", path);

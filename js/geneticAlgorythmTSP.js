@@ -125,7 +125,7 @@ Kraków Rzeszów 112
 function parseInputData(input) {
   const lines = input.trim().split("\n");
 
-  const numCitiesString = lines[0].split(" ")[0];
+  const [numCitiesString, startCity] = lines[0].split(" ");
   const numCities = parseInt(numCitiesString, 10);
 
   const cityData = lines.slice(1).map((line) => {
@@ -137,69 +137,89 @@ function parseInputData(input) {
     };
   });
 
-  const adjacencyList = Array.from({ length: numCities + 1 }, () => []);
-  console.log(adjacencyList);
-  cityData.forEach(({ cityA, cityB, time }) => {
-    console.log(adjacencyList[cityA]);
-    adjacencyList[cityA].push({ city: cityB, time });
-    adjacencyList[cityB].push({ city: cityA, time });
-  });
-
-  // Add missing edges with a high time value
-  for (let i = 1; i <= numCities; i++) {
-    for (const edge of adjacencyList[i]) {
-      if (adjacencyList[i].filter((e) => e.city === edge.city).length === 1) {
-        adjacencyList[i].push({ city: numCities + 1, time: Number.MAX_VALUE });
-      }
-    }
-  }
-
   return {
     numCities,
-    startCity: 1,
-    adjacencyList,
+    startCity,
+    cityData,
   };
 }
 
-function memoizedTSP(adjacencyList, currentCity, visited, memo) {
-  if (visited.length === adjacencyList.length) {
-    return adjacencyList[currentCity][0].time;
+function geneticAlgorithmTSP(startCity, cityData, populationSize, generations) {
+  const distances = {};
+
+  cityData.forEach(({ cityA, cityB, time }) => {
+    distances[cityA] = distances[cityA] || {};
+    distances[cityB] = distances[cityB] || {};
+    distances[cityA][cityB] = time;
+    distances[cityB][cityA] = time;
+  });
+
+  let population = [];
+  for (let i = 0; i < populationSize; i++) {
+    let path = Object.keys(distances);
+    path = path.filter((city) => city !== startCity);
+    path = [startCity, ...path.sort(() => 0.5 - Math.random())];
+    population.push(path);
   }
 
-  if (memo[currentCity][visited] !== undefined) {
-    return memo[currentCity][visited];
-  }
+  for (let generation = 0; generation < generations; generation++) {
+    population = population.map((path) => {
+      return {
+        path,
+        fitness: calculateTotalDistance(path, distances),
+      };
+    });
 
-  let minDistance = Infinity;
+    population.sort((a, b) => a.fitness - b.fitness);
 
-  for (const edge of adjacencyList[currentCity]) {
-    if (!visited.includes(edge.city)) {
-      const visitedCopy = [...visited];
-      visitedCopy.push(edge.city);
+    const newPopulation = [population[0].path];
 
-      const partialDistance =
-        edge.time + memoizedTSP(adjacencyList, edge.city, visitedCopy, memo);
-
-      minDistance = Math.min(minDistance, partialDistance);
+    while (newPopulation.length < populationSize) {
+      const parent1 =
+        population[Math.floor(Math.random() * populationSize)].path;
+      const parent2 =
+        population[Math.floor(Math.random() * populationSize)].path;
+      const crossoverPoint =
+        Math.floor(Math.random() * (parent1.length - 1)) + 1;
+      let child = [...parent1.slice(0, crossoverPoint)];
+      for (const city of parent2) {
+        if (!child.includes(city)) {
+          child.push(city);
+        }
+      }
+      newPopulation.push(child);
     }
+    population = newPopulation;
   }
 
-  memo[currentCity][visited] = minDistance;
+  const bestPath = population[0];
+  console.log("best path", bestPath);
+  const totalTime = calculateTotalDistance(bestPath, distances);
 
-  return minDistance;
+  return { bestPath, totalTime };
 }
 
-const { numCities, startCity, adjacencyList } = parseInputData(inputData);
+function calculateTotalDistance(path, distances) {
+  let totalDistance = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const currentCity = path[i];
+    const nextCity = path[i + 1];
+    totalDistance += distances[currentCity][nextCity];
+  }
+  totalDistance += distances[path[path.length - 1]][path[0]];
+  return totalDistance;
+}
 
-const memo = Array.from({ length: numCities + 1 }, () =>
-  Array.from({ length: 1 << numCities }, () => undefined)
-);
+const { numCities, startCity, cityData } = parseInputData(inputData);
 
-const shortestPathLength = memoizedTSP(
-  adjacencyList,
+const populationSize = 10;
+const generations = 1000;
+const { bestPath, totalTime } = geneticAlgorithmTSP(
   startCity,
-  [startCity],
-  memo
+  cityData,
+  populationSize,
+  generations
 );
 
-console.log("Shortest TSP Path Length:", shortestPathLength);
+console.log("Best TSP Path:", bestPath);
+console.log("Total Travel Distance:", totalTime, "minutes");
